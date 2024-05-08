@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use Carbon\Carbon;
 use App\Models\Posts;
+use Twilio\Rest\Client;
+use App\Models\Contactos;
 use App\Models\Categorias;
 use App\Models\Comentarios;
 use Illuminate\Http\Request;
@@ -21,7 +23,6 @@ class PostController extends Controller
             ->with('categoria')
             ->orderBy('id', 'DESC')
             ->paginate(10);
-        // $blogs = Posts::with('usuario','categoria')->orderBy('id', 'DESC')->paginate(10);
         foreach($blogs as $item){
             $item->imagen = $item->getImagenUrl();
             $item->cant_comentarios = Comentarios::where('post_id' , $item->id)->count();
@@ -74,10 +75,7 @@ class PostController extends Controller
      */
     public function create()
     {
-        // $categorias = Categorias::where('estado', true)->get();
-        // $tags = Tags::where('estado', true)->get();
 
-        // return view('posts.create', compact('categorias', 'tags'));
     }
 
     /**
@@ -98,7 +96,7 @@ class PostController extends Controller
             })
             ->orderBy('id', 'DESC')
             ->paginate(10);
-        // $blogs = Posts::with('usuario','categoria')->orderBy('id', 'DESC')->paginate(10);
+
         foreach($blogs as $item){
             $item->imagen = $item->getImagenUrl();
             $item->cant_comentarios = Comentarios::where('post_id' , $item->id)->count();
@@ -137,14 +135,7 @@ class PostController extends Controller
      */
     public function edit($id)
     {
-        // $post = Posts::find($id);
-
-        // // dd($post);
-
-        // $categorias = Categorias::where('estado', true)->get();
-        // $tags = Tags::where('estado', true)->get();
-
-        // return view('posts.edit', compact('post', 'categorias', 'tags'));
+        //
     }
 
     /**
@@ -152,51 +143,7 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // $this->validate($request, [
-        //     'categoria_id' => 'required|exists:categorias,id',
-        //     'titulo' => 'required|string|min:10|max:200',
-        //     'imagen' => 'nullable|image|mimes:png,jpg,jpeg',
-        //     'resumen' => 'required|string|min:5|max:350',
-        //     'contenido' => 'required|string|min:5',
-        //     'estado' => 'nullable',
-        //     'tags' => 'nullable',
-        //     'fecha_publicacion' => 'required'
-        // ]);
-
-        // $post = Posts::find($id);
-
-        // if($request->file('imagen')){
-        //     // eliminar la imagen anterior
-        //     if($post->imagen != 'default.png'){
-        //         if(file_exists(public_path().'/imagenes/posts/'.$post->imagen)){
-        //             unlink(public_path().'/imagenes/posts/'.$post->imagen);
-        //         }
-        //     }
-
-        //     $imagen = $request->file('imagen');
-        //     $nombreImagen = uniqid('post_') . '.png';
-        //     if(!is_dir(public_path('/imagenes/posts/'))){
-        //         File::makeDirectory(public_path().'/imagenes/posts/',0777,true);
-        //     }
-        //     $subido = $imagen->move(public_path().'/imagenes/posts/', $nombreImagen);
-
-        //     $post->imagen = $nombreImagen;
-        // }
-
-        // $post->categoria_id = $request->categoria_id;
-        // $post->titulo = $request->titulo;
-
-        // $post->resumen = $request->resumen;
-        // $post->contenido = $request->contenido;
-        // $post->estado = ($request->estado == 'on') ? true : false;
-        // $post->tags = json_encode($request->tags);
-        // $post->fecha_publicacion = $request->fecha_publicacion;
-        // $post->usuario_id = auth()->user()->id;
-        // if ($post->save()) {
-        //     return redirect('/posts')->with('success', 'Registro actualizado correctamente!');
-        // } else {
-        //     return back()->with('error', 'El registro no fué actualizado!');
-        // }
+        //
     }
 
     /**
@@ -204,13 +151,7 @@ class PostController extends Controller
      */
     public function estado($id)
     {
-        // $post = Posts::find($id);
-        // $post->estado = !$post->estado;
-        // if ($post->save()) {
-        //     return redirect('/posts')->with('success', 'Estado actualizado correctamente!');
-        // } else {
-        //     return back()->with('error', 'El estado no fué actualizado!');
-        // }
+        //
     }
     public function categorias()
     {
@@ -234,6 +175,7 @@ class PostController extends Controller
         $comment->post_id=$request->post_id;
         $comment->comentario=$request->comentario;
         $comment->estado=true;
+        $comment->fecha=now();
         $comment->usuario_id=auth()->user()->id;
         if($comment->save()){
             return response()->json([
@@ -246,4 +188,50 @@ class PostController extends Controller
             ]);
         }
     }
+    public function contacto(Request $request){
+        $this->validate($request, [
+            'nombre'=>'required|string|min:2|max:200',
+            'correo'=>'required|email',
+            'asunto'=>'required|string|min:5|max:200',
+            'mensaje'=>'required|string|min:10|max:500'
+        ]);
+        $contacto=new Contactos();
+        $contacto->nombre=$request->nombre;
+        $contacto->correo=$request->correo;
+        $contacto->asunto=$request->asunto;
+        $contacto->mensaje=$request->mensaje;
+
+
+        if($contacto->save()){
+            return response()->json([
+                'mensaje'=>'Registro agregado correctamente!',
+                'datos'=>$contacto,
+            ]);
+        }else{
+            return response()->json([
+                'mensaje'=>'Elregistro no fue agregado!'
+            ]);
+        }
+    }
+    //ENVIAR EL SMS
+    public function enviarSMS($numero){
+        $sid= env('TWILIO_SID');
+        $token=env('TWILIO_TOKEN');
+        $desde=env('TWILIO_FROM');
+        $a='+591'.$numero;
+        $mensaje="Hola, gracias por comunicarte con nosotros. Te responderemos a la brevedad posible.";
+
+        $clienteTwilio=new Client($sid,$token);
+        $mensajeEnviado=$clienteTwilio->messages->create(
+            $a,[
+                'from'=>$desde,
+                'body'=>$mensaje
+            ]
+            );
+            return response()->json([
+                'mensaje'=>'Mensaje enviado!',
+                'datos'=>$mensajeEnviado,
+            ]);
+    }
+
 }

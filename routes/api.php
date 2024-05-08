@@ -31,6 +31,12 @@ Route::get('/posts/{id}/{antsig}', [PostController::class, 'siguiente']);
 Route::get('/categorias', [PostController::class, 'categorias']);
 Route::post('/resultados', [PostController::class, 'filtrado']);
 
+Route::post('/contactos', [PostController::class, 'contacto']);
+
+//RUTA PARA ENVIAR EL SMS TEST
+
+Route::get('/sms/{telefono}',[PostController::class, 'enviarSMS']);
+
 Route::group(["middleware" => "auth:sanctum"], function () {
  Route::post('/comentarios', [PostController::class, 'comentario']);
 });
